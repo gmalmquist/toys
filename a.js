@@ -69,6 +69,7 @@ function draw() {
     width: 200,
     height: 300,
     border_nodes: [],
+    inner_nodes: [],
   };
 
   let N = 20;
@@ -85,30 +86,64 @@ function draw() {
     tree.border_nodes.push(n.scale(-1).add(c).add(c));
   }
 
-  fill('white');
   noStroke();
-  tree.border_nodes.forEach(p => ellipse(p.ix, p.iy, 5, 5));
+
+  fill('green');
+  tree.border_nodes.forEach((p, index, array) => {
+    if ((index%2 == 1) == (index < array.length/2)) {
+      fill('green');
+    } else {
+      fill('red');
+    }
+    if (index == array.length/2) {
+      fill('yellow');
+    }
+    ellipse(p.ix, p.iy, 5, 5);
+  });
 
   fill('yellow');
-  noStroke();
-  tree.border_nodes.forEach((p0, index) => {
-    if (index >= tree.border_nodes.length-1) return;
-    let p1 = tree.border_nodes[index + 1];
+  drawTinsel(tree.border_nodes);
+}
+
+function drawTinsel(nodes) {
+  nodes.forEach((p0, index, array) => {
+    let p1 = array[index + 1];
+    if (index >= array.length - 1) {
+      // For the last node, pretend the line just keeps going.
+      p1 = array[index];
+      p0 = array[index-1];
+      let diff = p1.sub(p0);
+      p0 = p1;
+      p1 = p0.add(diff);
+    }
+    let parity = index%2==0 ? -1 : 1;
+    if (index > array.length/2) {
+      parity = -parity;
+    }
     let vT = p1.sub(p0);
-    let vN = vT.r90().scale(index%2==0 ? -1 : 1);
+    let vN = vT.r90().scale(parity);
     let N = 5;
     let r = 8;
+    let domain = PI;
+
+    if (index >= array.length/2-2 && index <= array.length/2+1) {
+      domain *= 2;
+      N *= 2;
+    }
+
+    let offset = millis() / 1000.0;
+    offset = sin(offset) * 0.1;
+
     for (let i = 0; i < N; i++) {
       let q = V()
-        .add(vT.scale(cos(-i*PI/N)))
-        .add(vN.scale(sin(i*PI/N)))
+        .add(vT.scale(cos(-i*domain/N + offset)))
+        .add(vN.scale(sin(i*domain/N + offset)))
         .scale(0.5)
         .add(p0);
       ellipse(q.ix, q.iy, 1, 1);
     }
   });
 }
-
 
 
 
