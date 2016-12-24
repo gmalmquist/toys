@@ -70,61 +70,68 @@ Vec.B2 = function(a, b, c, s) {
 
 function V(x=0, y=0, z=0) { return new Vec(x, y, z); }
 
-function setup() {
-  createCanvas(640, 480);
-}
-
-function draw() {
-  background(0);
-
-  let tree = {
-    width: 200,
-    height: 300,
-    border_nodes: [],
-    inner_nodes: [],
-  };
-
-  let N = 20;
-
-  // left side
-  for (let i = 0; i < N; i++) {
-    tree.border_nodes.push(Vec.lerp(
-      V(width/2 - tree.width/2, height/2 + tree.height/2),
-      V(width/2, height/2 - tree.height/2),
-      i/(N - 1.0)
-    ));
+class XmasTree {
+  constructor() {
+    this.width = 200;
+    this.height = 300;
+    this.init();
   }
 
-  // right side
-  for (let i = N-1; i >= 0; i--) {
-    let n = tree.border_nodes[i];
-    let c = V(width/2, n.y);
-    tree.border_nodes.push(n.scale(-1).add(c).add(c));
-  }
+  init() {
+    this.border_nodes = [];
+    this.inner_nodes = [];
 
-  // middle
-  for (let i = 0; i < N-1; i++) {
-    let f = 1.0 - i/(N-2.0);
-    let A = tree.border_nodes[i];
-    let B = tree.border_nodes[tree.border_nodes.length - i - 1];
-    let sink = Vec.scalarLerp(1, 15, f);
-    let M = Vec.lerp(A, B, 0.5).add(B.sub(A).r90().normalized.scale(sink));
-    let count = Math.round(Vec.scalarLerp(1, 15, f));
-    for (let j = 0; j < count; j++) {
-      let s = (j+1.0)/(count+1.0);
-      if (i%2 == 0) s = 1-s;
-      tree.inner_nodes.push(Vec.B2(A, M, B, s));
+    let N = 20;
+
+    // left side
+    for (let i = 0; i < N; i++) {
+      this.border_nodes.push(Vec.lerp(
+        V(-this.width/2, this.height/2),
+        V(0, -this.height/2),
+        i/(N - 1.0)
+      ));
+    }
+
+    // right side
+    for (let i = N-1; i >= 0; i--) {
+      let n = this.border_nodes[i];
+      let c = V(0, n.y);
+      this.border_nodes.push(n.scale(-1).add(c).add(c));
+    }
+
+    // middle
+    for (let i = 0; i < N-1; i++) {
+      let f = 1.0 - i/(N-2.0);
+      let A = this.border_nodes[i];
+      let B = this.border_nodes[this.border_nodes.length - i - 1];
+      let sink = Vec.scalarLerp(1, 15, f);
+      let M = Vec.lerp(A, B, 0.5).add(B.sub(A).r90().normalized.scale(sink));
+      let count = Math.round(Vec.scalarLerp(1, 15, f));
+      for (let j = 0; j < count; j++) {
+        let s = (j+1.0)/(count+1.0);
+        if (i%2 == 0) s = 1-s;
+        this.inner_nodes.push(Vec.B2(A, M, B, s));
+      }
     }
   }
 
-  noStroke();
+  draw() {
+    noStroke();
 
-  (function() {
+    this.drawBackground();
+    this.drawOrnaments();
+
+    fill('yellow');
+    this.drawTinsel(tree.border_nodes);
+    this.drawTinsel(tree.inner_nodes);
+  }
+
+  drawBackground() {
     fill('#002200');
     beginShape();
-    let BL = V(width/2 - tree.width/2, height/2 + tree.height/2);
-    let BR = V(width/2 + tree.width/2, height/2 + tree.height/2);
-    let TC = V(width/2, height/2 - tree.height/2);
+    let BL = V(-this.width/2, this.height/2);
+    let BR = V(this.width/2, this.height/2);
+    let TC = V(0, -this.height/2);
     vertex(BL.ix, BL.iy);
     let N = 10;
     let BC = Vec.lerp(BL, BR, 0.5)
@@ -136,79 +143,90 @@ function draw() {
     vertex(BR.ix, BR.iy);
     vertex(TC.ix, TC.iy);
     endShape(CLOSE);
-  })();
+  }
 
-  tree.border_nodes.forEach((p, index, array) => {
-    if ((index%2 == 1) == (index < array.length/2)) {
-      fill('green');
-    } else {
-      fill('red');
-    }
-    if (index == array.length/2) {
-      fill('yellow');
-    }
-    ellipse(p.ix, p.iy, 5, 5);
-  });
-
-  tree.inner_nodes.forEach((p, index) => {
-    if (index%3 == 0) {
-      fill('red');
-      if (index % 2 == 0) {
-        fill('magenta');
+  drawOrnaments() {
+    tree.border_nodes.forEach((p, index, array) => {
+      if ((index%2 == 1) == (index < array.length/2)) {
+        fill('green');
+      } else {
+        fill('red');
       }
-    } else {
-      fill('lightgreen');
-      if (index % 5 == 0) {
+      if (index == array.length/2) {
         fill('yellow');
       }
-    }
-    ellipse(p.ix, p.iy, 5, 5);
-  });
+      ellipse(p.ix, p.iy, 5, 5);
+    });
 
-  fill('yellow');
-  drawTinsel(tree.border_nodes);
-  drawTinsel(tree.inner_nodes);
+    tree.inner_nodes.forEach((p, index) => {
+      if (index%3 == 0) {
+        fill('red');
+        if (index % 2 == 0) {
+          fill('magenta');
+        }
+      } else {
+        fill('lightgreen');
+        if (index % 5 == 0) {
+          fill('yellow');
+        }
+      }
+      ellipse(p.ix, p.iy, 5, 5);
+    });
+  }
+
+  drawTinsel(nodes) {
+    nodes.forEach((p0, index, array) => {
+      let p1 = array[index + 1];
+      if (index >= array.length - 1) {
+        // For the last node, pretend the line just keeps going.
+        p1 = array[index];
+        p0 = array[index-1];
+        let diff = p1.sub(p0);
+        p0 = p1;
+        p1 = p0.add(diff);
+      }
+      let parity = index%2==0 ? -1 : 1;
+      if (index > array.length/2) {
+        parity = -parity;
+      }
+      let vT = p1.sub(p0);
+      let vN = vT.r90().scale(parity);
+      let N = 5;
+      let r = 8;
+      let domain = PI;
+
+      if (index >= array.length/2-2 && index <= array.length/2+1) {
+        domain *= 2;
+        N *= 2;
+      }
+
+      let offset = millis() / 1000.0;
+      offset = sin(offset) * 0.1;
+
+      for (let i = 0; i < N; i++) {
+        let q = V()
+          .add(vT.scale(cos(-i*domain/N + offset)))
+          .add(vN.scale(sin(i*domain/N + offset)))
+          .scale(0.5)
+          .add(p0);
+        ellipse(q.ix, q.iy, 1, 1);
+      }
+    });
+  }
 }
 
-function drawTinsel(nodes) {
-  nodes.forEach((p0, index, array) => {
-    let p1 = array[index + 1];
-    if (index >= array.length - 1) {
-      // For the last node, pretend the line just keeps going.
-      p1 = array[index];
-      p0 = array[index-1];
-      let diff = p1.sub(p0);
-      p0 = p1;
-      p1 = p0.add(diff);
-    }
-    let parity = index%2==0 ? -1 : 1;
-    if (index > array.length/2) {
-      parity = -parity;
-    }
-    let vT = p1.sub(p0);
-    let vN = vT.r90().scale(parity);
-    let N = 5;
-    let r = 8;
-    let domain = PI;
+let tree = new XmasTree();
 
-    if (index >= array.length/2-2 && index <= array.length/2+1) {
-      domain *= 2;
-      N *= 2;
-    }
-
-    let offset = millis() / 1000.0;
-    offset = sin(offset) * 0.1;
-
-    for (let i = 0; i < N; i++) {
-      let q = V()
-        .add(vT.scale(cos(-i*domain/N + offset)))
-        .add(vN.scale(sin(i*domain/N + offset)))
-        .scale(0.5)
-        .add(p0);
-      ellipse(q.ix, q.iy, 1, 1);
-    }
-  });
+function setup() {
+  createCanvas(640, 480);
 }
 
+function draw() {
+  background(0);
 
+  push();
+  translate(width/2, height/2);
+  tree.draw();
+  pop();
+}
 
