@@ -237,7 +237,7 @@ class Snow {
       noStroke();
       fill('#0088FF');
       let r = Vec.scalarLerp(2, 5, (index / this.flakes.length));
-      ellipse(p.ix, p.iy, r, r);
+      this.drawFlake(p, r, index);
     });
 
     this.flakes = this.flakes.map((p, index) => {
@@ -247,6 +247,31 @@ class Snow {
       }
       return p;
     });
+  }
+
+  drawFlake(p, size, index) {
+    ellipse(p.x, p.y, size, size);
+    let spokes = round(Vec.scalarLerp(3, 7, index/this.flakes.length));
+    let spin = sin(2*PI*40*index/this.flakes.length) * 0.5;
+    for (let i = 0; i < spokes; i++) {
+      let a = 2*PI*(i/spokes + spin*millis()/1000.0);
+      let q = p.add(V(cos(a), sin(a)).scale(size*1.5));
+      stroke('#0088FF');
+      line(p.x, p.y, q.x, q.y);
+
+      let I = q.sub(p);
+      let J = I.r90();
+
+      let m0 = Vec.lerp(p, q, 0.6);
+      let m1 = m0
+        .add(J.scale(0.5))
+        .add(I.scale(0.5 + 0.5*sin(PI*2*8*index/this.flakes.length)));
+
+      line(m0.x, m0.y, m1.x, m1.y);
+
+      let m2 = m1.sub(J);
+      line(m0.x, m0.y, m2.x, m2.y);
+    }
   }
 }
 
