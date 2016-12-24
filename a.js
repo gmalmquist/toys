@@ -273,14 +273,14 @@ function draw() {
 
 function snowDrifts() {
   let N = 10;
-  let r = 200;
+  let R = 200;
   let A = V(0, height);
   let B = V(width, height);
   fill('white');
   noStroke();
   for (let i = 0; i < N; i++) {
     let s = i/(N-1.0);
-    s = sin(s*PI/2);
+    let r = abs(sin(s*PI*3.5))*50 + R;
     let pt = Vec.lerp(A, B, s);
     ellipse(pt.ix, pt.iy, r, r);
   }
