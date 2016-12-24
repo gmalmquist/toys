@@ -220,6 +220,8 @@ class Snow {
     this.width = width;
     this.height = height;
 
+    this.lastTime = millis();
+
     this.flakes = [];
     for (let i = 0; i < 50; i++) {
       this.flakes.push(V(random(width), random(height)));
@@ -227,6 +229,10 @@ class Snow {
   }
 
   draw() {
+    this.now = millis();
+    this.delta = (this.now - this.lastTime)/1000.0;
+    this.lastTime = this.now;
+
     this.flakes.forEach((p, index) => {
       noStroke();
       fill('#0088FF');
@@ -235,7 +241,7 @@ class Snow {
     });
 
     this.flakes = this.flakes.map((p, index) => {
-      p = p.add(V(0, 1));
+      p = p.add(V(0, 10 * this.delta));
       if (p.y > this.height + 10) {
         p = V(random(width), -10);
       }
@@ -255,6 +261,8 @@ function setup() {
 function draw() {
   background(0);
 
+  snowDrifts();
+
   push();
   translate(width/2, height/2);
   tree.draw();
@@ -263,7 +271,20 @@ function draw() {
   snow.draw(width, height);
 }
 
-
+function snowDrifts() {
+  let N = 10;
+  let r = 200;
+  let A = V(0, height);
+  let B = V(width, height);
+  fill('white');
+  noStroke();
+  for (let i = 0; i < N; i++) {
+    let s = i/(N-1.0);
+    s = sin(s*PI/2);
+    let pt = Vec.lerp(A, B, s);
+    ellipse(pt.ix, pt.iy, r, r);
+  }
+}
 
 
 
