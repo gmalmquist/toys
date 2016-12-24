@@ -215,10 +215,41 @@ class XmasTree {
   }
 }
 
+class Snow {
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
+
+    this.flakes = [];
+    for (let i = 0; i < 50; i++) {
+      this.flakes.push(V(random(width), random(height)));
+    }
+  }
+
+  draw() {
+    this.flakes.forEach((p, index) => {
+      noStroke();
+      fill('#0088FF');
+      let r = Vec.scalarLerp(2, 5, (index / this.flakes.length));
+      ellipse(p.ix, p.iy, r, r);
+    });
+
+    this.flakes = this.flakes.map((p, index) => {
+      p = p.add(V(0, 1));
+      if (p.y > this.height + 10) {
+        p = V(random(width), -10);
+      }
+      return p;
+    });
+  }
+}
+
 let tree = new XmasTree();
+let snow = null;
 
 function setup() {
   createCanvas(640, 480);
+  snow = new Snow(width, height);
 }
 
 function draw() {
@@ -228,5 +259,11 @@ function draw() {
   translate(width/2, height/2);
   tree.draw();
   pop();
+
+  snow.draw(width, height);
 }
+
+
+
+
 
