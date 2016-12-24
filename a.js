@@ -52,8 +52,20 @@ class Vec {
   }
 }
 
+Vec.scalarLerp = function(a, b, s) {
+  return (1.0-s) * a + s * b;
+}
+
 Vec.lerp = function(a, b, s) {
   return a.scale(1.0-s).add(b.scale(s));
+}
+
+Vec.B1 = function(a, b, s) {
+  return Vec.lerp(a, b, s);
+}
+
+Vec.B2 = function(a, b, c, s) {
+  return Vec.B1(Vec.B1(a, b, s), Vec.B1(b, c, s), s);
 }
 
 function V(x=0, y=0, z=0) { return new Vec(x, y, z); }
@@ -73,6 +85,8 @@ function draw() {
   };
 
   let N = 20;
+
+  // left side
   for (let i = 0; i < N; i++) {
     tree.border_nodes.push(Vec.lerp(
       V(width/2 - tree.width/2, height/2 + tree.height/2),
@@ -80,10 +94,27 @@ function draw() {
       i/(N - 1.0)
     ));
   }
+
+  // right side
   for (let i = N-1; i >= 0; i--) {
     let n = tree.border_nodes[i];
     let c = V(width/2, n.y);
     tree.border_nodes.push(n.scale(-1).add(c).add(c));
+  }
+
+  // middle
+  for (let i = 0; i < N-1; i++) {
+    let f = 1.0 - i/(N-2.0);
+    let A = tree.border_nodes[i];
+    let B = tree.border_nodes[tree.border_nodes.length - i - 1];
+    let sink = Vec.scalarLerp(1, 15, f);
+    let M = Vec.lerp(A, B, 0.5).add(B.sub(A).r90().normalized.scale(sink));
+    let count = Math.round(Vec.scalarLerp(1, 15, f));
+    for (let j = 0; j < count; j++) {
+      let s = (j+1.0)/(count+1.0);
+      if (i%2 == 0) s = 1-s;
+      tree.inner_nodes.push(Vec.B2(A, M, B, s));
+    }
   }
 
   noStroke();
@@ -101,8 +132,25 @@ function draw() {
     ellipse(p.ix, p.iy, 5, 5);
   });
 
+  fill('green');
+  tree.inner_nodes.forEach((p, index) => {
+    if (index%3 == 0) {
+      fill('red');
+      if (index % 2 == 0) {
+        fill('magenta');
+      }
+    } else {
+      fill('lightgreen');
+      if (index % 5 == 0) {
+        fill('yellow');
+      }
+    }
+    ellipse(p.ix, p.iy, 5, 5);
+  });
+
   fill('yellow');
   drawTinsel(tree.border_nodes);
+  drawTinsel(tree.inner_nodes);
 }
 
 function drawTinsel(nodes) {
