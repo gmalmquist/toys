@@ -1,75 +1,3 @@
-class Vec {
-  constructor(x=0, y=0, z=0) {
-    this.store = [x, y, z];
-  }
-
-  get x() { return this.store[0]; }
-  get y() { return this.store[1]; }
-  get z() { return this.store[2]; }
-
-  set x(x) { this.store[0] = x; }
-  set y(y) { this.store[1] = y; }
-  set z(z) { this.store[2] = z; }
-
-  get ix() { return Math.floor(this.store[0]); }
-  get iy() { return Math.floor(this.store[1]); }
-  get iz() { return Math.floor(this.store[2]); }
-
-  get d() { return new Vec(...this.store); }
-
-  get norm2() { return this.dot(this); }
-  get norm() { return Math.sqrt(this.norm2); }
-  
-  get normalized() {
-    if (this.norm2 < 0.00001) return new Vec(0,0,0);
-    return this.scale(1.0 / this.norm);
-  }
-
-  scale(s) {
-    return new Vec(...this.store.map(v => v*s));
-  }
-
-  add(v) {
-    let c = this.d;
-    v.store.forEach((value, index) => c.store[index] += value);
-    return c;
-  }
-
-  sub(v) {
-    return v.scale(-1).add(this);
-  }
-
-  r90() {
-    return new Vec(-this.y, this.x, this.z);
-  }
-
-  dot(v) {
-    return this.store.map((x, i) => x*v.store[i]).reduce((a,b) => a+b);
-  }
-
-  toString() {
-    return `<${this.store.map(x => x.toString()).join(', ')}>`;
-  }
-}
-
-Vec.scalarLerp = function(a, b, s) {
-  return (1.0-s) * a + s * b;
-}
-
-Vec.lerp = function(a, b, s) {
-  return a.scale(1.0-s).add(b.scale(s));
-}
-
-Vec.B1 = function(a, b, s) {
-  return Vec.lerp(a, b, s);
-}
-
-Vec.B2 = function(a, b, c, s) {
-  return Vec.B1(Vec.B1(a, b, s), Vec.B1(b, c, s), s);
-}
-
-function V(x=0, y=0, z=0) { return new Vec(x, y, z); }
-
 class XmasTree {
   constructor() {
     this.width = 200;
@@ -104,9 +32,9 @@ class XmasTree {
       let f = 1.0 - i/(N-2.0);
       let A = this.border_nodes[i];
       let B = this.border_nodes[this.border_nodes.length - i - 1];
-      let sink = Vec.scalarLerp(1, 15, f);
+      let sink = Sca.lerp(1, 15, f);
       let M = Vec.lerp(A, B, 0.5).add(B.sub(A).r90().normalized.scale(sink));
-      let count = Math.round(Vec.scalarLerp(1, 15, f));
+      let count = Math.round(Sca.lerp(1, 15, f));
       for (let j = 0; j < count; j++) {
         let s = (j+1.0)/(count+1.0);
         if (i%2 == 0) s = 1-s;
@@ -118,6 +46,7 @@ class XmasTree {
   draw() {
     noStroke();
 
+    this.drawTrunk();
     this.drawBackground();
     this.drawOrnaments();
 
@@ -172,6 +101,18 @@ class XmasTree {
       }
       ellipse(p.ix, p.iy, 5, 5);
     });
+  }
+
+  drawTrunk() {
+    fill('#662200');
+    beginShape();
+    let w = this.width;
+    let h = this.height;
+    V(-w*0.25, h/2 + 20).v();
+    V(+w*0.25, h/2 + 20).v();
+    V(+w*0.20, h/2).v();
+    V(-w*0.20, h/2).v();
+    endShape(CLOSE);
   }
 
   drawTinsel(nodes) {
@@ -236,14 +177,14 @@ class Snow {
     this.flakes.forEach((p, index) => {
       noStroke();
       fill('#0088FF');
-      let r = Vec.scalarLerp(2, 5, (index / this.flakes.length));
+      let r = Sca.lerp(2, 5, (index / this.flakes.length));
       this.drawFlake(p, r, index);
     });
 
     this.flakes = this.flakes.map((p, index) => {
       p = p.add(V(0, 10 * this.delta));
       if (p.y > this.height + 10) {
-        p = V(random(width), -10);
+        p = V(random(width), p.y - this.height - 30);
       }
       return p;
     });
@@ -251,7 +192,7 @@ class Snow {
 
   drawFlake(p, size, index) {
     ellipse(p.x, p.y, size, size);
-    let spokes = round(Vec.scalarLerp(3, 7, index/this.flakes.length));
+    let spokes = round(Sca.lerp(3, 7, index/this.flakes.length));
     let spin = sin(2*PI*40*index/this.flakes.length) * 0.5;
     for (let i = 0; i < spokes; i++) {
       let a = 2*PI*(i/spokes + spin*millis()/1000.0);
@@ -275,17 +216,55 @@ class Snow {
   }
 }
 
+class Stars {
+  constructor(width, height) {
+    this.stars = [];
+
+    let N = 100;
+    for (let i = 0; i < N; i++) {
+      this.stars.push({
+        pt: V(random(width), random(height)),
+        size: random(2, 8),
+        pulseRate: 4*PI*random(100)/100.0
+      });
+    }
+  }
+
+  draw() {
+    noStroke();
+    this.stars.forEach((star, index, array) => {
+      let pulse = Sca.lerp(0.25, 0.8, sin(2*PI*index/array.length + star.pulseRate*millis()/1000.0)/2+0.5);
+      fill(`rgba(255, 255, 0, ${pulse})`);
+      beginShape();
+      star.pt.sub(Vec.X.scale(star.size)).v();
+      star.pt.sub(Vec.X.scale(star.size/3)).sub(Vec.Y.scale(star.size/3)).v();
+      star.pt.sub(Vec.Y.scale(star.size)).v();
+      star.pt.add(Vec.X.scale(star.size/3)).sub(Vec.Y.scale(star.size/3)).v();
+      star.pt.add(Vec.X.scale(star.size)).v();
+      star.pt.add(Vec.X.scale(star.size/3)).add(Vec.Y.scale(star.size/3)).v();
+      star.pt.add(Vec.Y.scale(star.size)).v();
+      star.pt.sub(Vec.X.scale(star.size/3)).add(Vec.Y.scale(star.size/3)).v();
+      endShape(CLOSE);
+      fill('white');
+      ellipse(star.pt.x, star.pt.y, star.size/2., star.size/2.);
+    });
+  }
+}
+
 let tree = new XmasTree();
 let snow = null;
+let stars = null;
 
 function setup() {
   createCanvas(640, 480);
   snow = new Snow(width, height);
+  stars = new Stars(width, height/2);
 }
 
 function draw() {
   background(0);
 
+  stars.draw();
   snowDrifts();
 
   push();
