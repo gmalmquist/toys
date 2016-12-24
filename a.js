@@ -119,7 +119,25 @@ function draw() {
 
   noStroke();
 
-  fill('green');
+  (function() {
+    fill('#002200');
+    beginShape();
+    let BL = V(width/2 - tree.width/2, height/2 + tree.height/2);
+    let BR = V(width/2 + tree.width/2, height/2 + tree.height/2);
+    let TC = V(width/2, height/2 - tree.height/2);
+    vertex(BL.ix, BL.iy);
+    let N = 10;
+    let BC = Vec.lerp(BL, BR, 0.5)
+      .add(BR.sub(BL).r90().normalized.scale(20));
+    for (let i = 0; i < N; i++) {
+      let p = Vec.B2(BL, BC, BR, (i+1.0)/(N+1.0));
+      vertex(p.ix, p.iy);
+    }
+    vertex(BR.ix, BR.iy);
+    vertex(TC.ix, TC.iy);
+    endShape(CLOSE);
+  })();
+
   tree.border_nodes.forEach((p, index, array) => {
     if ((index%2 == 1) == (index < array.length/2)) {
       fill('green');
@@ -132,7 +150,6 @@ function draw() {
     ellipse(p.ix, p.iy, 5, 5);
   });
 
-  fill('green');
   tree.inner_nodes.forEach((p, index) => {
     if (index%3 == 0) {
       fill('red');
